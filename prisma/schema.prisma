@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id     Int     @id @default(autoincrement())
+  name   String
+  movies Movie[]
+  users  User[]
+}
+
+model Movie {
+  id                Int                @id @default(autoincrement())
+  title             String
+  description       String
+  dateCreate        DateTime           @default(now())
+  dateRelease       DateTime
+  categories        Category[]
+  productionCompany String
+  actors            String[]
+  director          String[]
+  media             String
+  valueTicket       Float
+  sessions          Session[]
+  tickets           TicketMoviesUser[]
+}
+
+model Snack {
+  id          Int          @id @default(autoincrement())
+  name        String
+  description String
+  value       Float
+  purchases   SnacksUser[]
+}
+
+model TicketMoviesUser {
+  id            Int     @id @default(autoincrement())
+  idUser        Int
+  user          User    @relation(fields: [idUser], references: [id])
+  idMovie       Int
+  movie         Movie   @relation(fields: [idMovie], references: [id])
+  codeTicket    Int
+  valueTicket   Float
+  statusPayment String  @default("PENDING")
+  idSession     Int
+  session       Session @relation(fields: [idSession], references: [id])
+}
+
+model SnacksUser {
+  id            Int    @id @default(autoincrement())
+  idUser        Int
+  user          User   @relation(fields: [idUser], references: [id])
+  idSnack       Int
+  snack         Snack  @relation(fields: [idSnack], references: [id])
+  value         Float
+  statusPayment String @default("PENDING")
+}
+
+model Session {
+  id               Int                @id @default(autoincrement())
+  idMovie          Int
+  movie            Movie              @relation(fields: [idMovie], references: [id])
+  timeSession      DateTime
+  // Poltronas ainda disponíveis para compra (as aprovadas são removidas daqui)
+  availableSeats   String[]
+  TicketMoviesUser TicketMoviesUser[]
+  sessionUsers     SessionUser[]
+}
+
+model SessionUser {
+  id        Int      @id @default(autoincrement())
+  idSession Int
+  session   Session  @relation(fields: [idSession], references: [id])
+  idUser    Int
+  user      User     @relation(fields: [idUser], references: [id])
+  seats        String[]
+  // PENDING -> aguardando checagem | APPROVED -> assentos reservados | REJECTED -> indisponíveis
+  status       String   @default("PENDING")
+  statusReason String?
+  idCallback   String?
+  idDatabase   String?
+  createdAt    DateTime @default(now())
+}
+
+model People {
+  id       Int       @id @default(autoincrement())
+  name     String
+  document String    @unique
+  phone    String?
+  dateBith DateTime?
+  zipcode  String?
+
+  user User?
+}
+
+model User {
+  id                  Int                @id @default(autoincrement())
+  idPeople            Int                @unique
+  people              People             @relation(fields: [idPeople], references: [id])
+  purchasedMovies     TicketMoviesUser[]
+  categoriesFavorites Category[]
+  purchasedSnackes    SnacksUser[]
+  sessions            SessionUser[]
+}
