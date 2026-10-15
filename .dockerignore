@@ -1,0 +1,12 @@
+node_modules
+generated
+.env
+.env.*
+.git
+.gitignore
+.claude
+*.log
+npm-debug.log*
+Dockerfile
+.dockerignore
+skills-lock.json
