@@ -275,7 +275,11 @@ for (const r of resources) {
 export const swaggerSpec = {
   openapi: '3.0.3',
   info: { title: 'CineFan API', version: '1.0.0', description: 'Backend de cinema - CRUD de todas as tabelas' },
-  servers: [{ url: `http://localhost:${process.env.PORT ?? 3000}` }],
+  // O primeiro é o padrão no seletor "Servers" do Swagger
+  servers: [
+    { url: 'https://cinefan.egnehl.easypanel.host', description: 'Produção (Easypanel)' },
+    { url: '/', description: 'Servidor atual (ex.: localhost)' },
+  ],
   paths,
   components: { schemas },
 };
