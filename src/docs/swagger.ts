@@ -62,10 +62,9 @@ const resources: Resource[] = [
       idSession: int,
       idUser: int,
       seats: { ...strArr('A1', 'A2'), description: 'Poltronas desejadas (precisam estar em session.availableSeats)' },
-      idCallback: { ...str('44f0ea1e-2ef2-49b8-8fc2-a2ad0b54a2e1'), description: 'idCallback do fluxo da Colmeia a ser retomado' },
       idDatabase: { ...str('Gxf3x1zt9ARJKmcbG4KbooXC8KcFby'), description: 'Opcional. Padrão: COLMEIA_ID_DATABASE do .env' },
     },
-    required: ['idSession', 'idUser', 'seats', 'idCallback'],
+    required: ['idSession', 'idUser', 'seats'],
     output: {
       id: { ...int, readOnly: true },
       idSession: int,
@@ -73,13 +72,13 @@ const resources: Resource[] = [
       seats: strArr('A1', 'A2'),
       status: { type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED'], example: 'PENDING' },
       statusReason: { type: 'string', nullable: true, example: null },
-      idCallback: str('44f0ea1e-2ef2-49b8-8fc2-a2ad0b54a2e1'),
+      idCallback: { ...str('44f0ea1e-2ef2-49b8-8fc2-a2ad0b54a2e1'), readOnly: true, description: 'Gerado pelo backend (UUID) na criação' },
       idDatabase: { type: 'string', nullable: true },
       createdAt: date,
     },
     createStatus: 200,
     createDescription:
-      'Retorna 200 com status PENDING. Após SEAT_CHECK_DELAY_MS (30s) o worker reserva os assentos (se disponíveis), muda o status para APPROVED/REJECTED e chama o callback da Colmeia com liberadoParaPagamento, motivo e celular (phone da People do usuário).',
+      'Retorna 200 com status PENDING e um idCallback gerado pelo backend (UUID). Após SEAT_CHECK_DELAY_MS (30s) o worker reserva os assentos (se disponíveis), muda o status para APPROVED/REJECTED e chama o callback da Colmeia com liberadoParaPagamento, motivo e celular (phone da People do usuário).',
     filters: ['idSession', 'idUser'],
   },
   {
@@ -88,10 +87,9 @@ const resources: Resource[] = [
       idUser: int, idMovie: int, idSession: int,
       codeTicket: { type: 'integer', example: 123456 },
       valueTicket: num,
-      idCallback: { ...str('7b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0'), description: 'idCallback do fluxo de pagamento da Colmeia' },
       idDatabase: { ...str('Db9Njl82SkwfKbPKl46ligB1htNvn3'), description: 'Opcional. Padrão: COLMEIA_PAYMENT_ID_DATABASE do .env' },
     },
-    required: ['idUser', 'idMovie', 'idSession', 'codeTicket', 'valueTicket', 'idCallback'],
+    required: ['idUser', 'idMovie', 'idSession', 'codeTicket', 'valueTicket'],
     filters: ['idUser', 'idMovie', 'idSession', 'codeTicket', 'statusPayment'],
     output: {
       id: { ...int, readOnly: true },
@@ -102,12 +100,12 @@ const resources: Resource[] = [
       valueTicket: num,
       statusPayment: { type: 'string', enum: ['PENDING', 'PAID', 'REJECTED'], example: 'PENDING' },
       statusReason: { type: 'string', nullable: true, example: null },
-      idCallback: str('7b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0'),
+      idCallback: { ...str('7b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0'), readOnly: true, description: 'Gerado pelo backend (UUID) na criação' },
       idDatabase: { type: 'string', nullable: true },
       createdAt: date,
     },
     createDescription:
-      'Cria o ticket com statusPayment PENDING e retorna o idCallback. Após PAYMENT_DELAY_MS (60s) o worker de pagamento muda o status para PAID/REJECTED e chama o callback da Colmeia com celular, statusPagamento e motivo.',
+      'Cria o ticket com statusPayment PENDING e um idCallback gerado pelo backend (UUID), devolvido na resposta. Após PAYMENT_DELAY_MS (60s) o worker de pagamento muda o status para PAID/REJECTED e chama o callback da Colmeia com celular, statusPagamento e motivo.',
   },
   {
     path: '/snacks-users', tag: 'SnacksUsers', schema: 'SnacksUser',
@@ -161,6 +159,17 @@ const paths: Record<string, any> = {
       summary: 'Busca usuário pelo documento da pessoa',
       parameters: [{ name: 'document', in: 'query', required: true, schema: { type: 'string' } }],
       responses: { 200: { description: 'Usuário encontrado' }, ...notFound, 400: errors[400] },
+    },
+  },
+  '/sessions/{id}/seats.png': {
+    get: {
+      tags: ['Sessions'],
+      summary: 'Imagem (PNG) do mapa de poltronas da sessão: verde = livre, vermelha = ocupada',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      responses: {
+        200: { description: 'Mapa de poltronas', content: { 'image/png': { schema: { type: 'string', format: 'binary' } } } },
+        ...notFound,
+      },
     },
   },
   '/movies/{id}/sessions': {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/prisma';
 import { publish, QUEUES } from '../config/rabbitmq';
 import { BaseService } from './baseService';
@@ -10,10 +11,10 @@ const SEAT_CHECK_DELAY_MS = Number(process.env.SEAT_CHECK_DELAY_MS ?? 30_000);
 
 class SessionUserService extends BaseService {
   // Registra o pedido como PENDING e agenda a checagem de disponibilidade (worker, após SEAT_CHECK_DELAY_MS)
-  async create({ idSession, idUser, seats, idCallback, idDatabase }: any) {
+  // O idCallback é gerado aqui (UUID) e devolvido na resposta; o cliente não envia
+  async create({ idSession, idUser, seats, idDatabase }: any) {
     const list = normalizeSeats(seats);
     if (!list.length) throw new AppError('Informe ao menos um assento em seats');
-    if (typeof idCallback !== 'string' || !idCallback.trim()) throw new AppError('idCallback é obrigatório');
 
     const [session, user] = await Promise.all([
       prisma.session.findUnique({ where: { id: Number(idSession) }, select: { id: true } }),
@@ -24,7 +25,13 @@ class SessionUserService extends BaseService {
     if (!user.people.phone) throw new AppError('Usuário sem telefone cadastrado (necessário para o callback)');
 
     const created = await prisma.sessionUser.create({
-      data: { idSession: session.id, idUser: user.id, seats: list, idCallback, idDatabase: idDatabase || null },
+      data: {
+        idSession: session.id,
+        idUser: user.id,
+        seats: list,
+        idCallback: randomUUID(),
+        idDatabase: idDatabase || null,
+      },
       include,
     });
 

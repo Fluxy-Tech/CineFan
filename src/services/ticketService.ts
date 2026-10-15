@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/prisma';
 import { publish, QUEUES } from '../config/rabbitmq';
 import { BaseService } from './baseService';
@@ -8,8 +9,8 @@ const PAYMENT_DELAY_MS = Number(process.env.PAYMENT_DELAY_MS ?? 60_000);
 
 class TicketService extends BaseService {
   // Cria o ticket como PENDING e agenda o processamento do pagamento (worker, após PAYMENT_DELAY_MS)
-  async create({ idUser, idMovie, idSession, codeTicket, valueTicket, idCallback, idDatabase }: any) {
-    if (typeof idCallback !== 'string' || !idCallback.trim()) throw new AppError('idCallback é obrigatório');
+  // O idCallback é gerado aqui (UUID) e devolvido na resposta; o cliente não envia
+  async create({ idUser, idMovie, idSession, codeTicket, valueTicket, idDatabase }: any) {
 
     const user = await prisma.user.findUnique({ where: { id: Number(idUser) }, include: { people: true } });
     if (!user) throw new AppError('Usuário não encontrado', 404);
@@ -22,7 +23,7 @@ class TicketService extends BaseService {
         idSession,
         codeTicket,
         valueTicket,
-        idCallback,
+        idCallback: randomUUID(),
         idDatabase: idDatabase || null,
       },
       include,
