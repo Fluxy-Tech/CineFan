@@ -46,9 +46,14 @@ model TicketMoviesUser {
   movie         Movie   @relation(fields: [idMovie], references: [id])
   codeTicket    Int
   valueTicket   Float
-  statusPayment String  @default("PENDING")
+  // PENDING -> aguardando worker de pagamento | PAID | REJECTED
+  statusPayment String   @default("PENDING")
+  statusReason  String?
+  idCallback    String?
+  idDatabase    String?
+  createdAt     DateTime @default(now())
   idSession     Int
-  session       Session @relation(fields: [idSession], references: [id])
+  session       Session  @relation(fields: [idSession], references: [id])
 }
 
 model SnacksUser {

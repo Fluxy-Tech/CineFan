@@ -11,7 +11,7 @@ export const QUEUES = {
 // Fila de espera: ninguém consome. A mensagem expira (expiration) e o RabbitMQ
 // a move via dead-letter para a fila de destino. Assim temos atraso sem plugin.
 const delayQueue = (queue: string) => `${queue}.delay`;
-const DELAYED_QUEUES = [QUEUES.seatAvailability];
+const DELAYED_QUEUES = [QUEUES.seatAvailability, QUEUES.payment];
 
 let connection: ChannelModel | null = null;
 let channel: Channel | null = null;

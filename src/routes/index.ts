@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { CrudController } from '../controllers/crudController';
 import { crudRouter } from './crudRouter';
 import userRoutes from './userRoutes';
+import movieRoutes from './movieRoutes';
 import { categoryService } from '../services/categoryService';
-import { movieService } from '../services/movieService';
 import { snackService } from '../services/snackService';
 import { sessionService } from '../services/sessionService';
 import { SessionUserController } from '../controllers/sessionUserController';
@@ -14,7 +14,7 @@ import { peopleService } from '../services/peopleService';
 const routes = Router();
 
 routes.use('/categories', crudRouter(new CrudController(categoryService)));
-routes.use('/movies', crudRouter(new CrudController(movieService)));
+routes.use('/movies', movieRoutes);
 routes.use('/snacks', crudRouter(new CrudController(snackService)));
 routes.use('/sessions', crudRouter(new CrudController(sessionService)));
 routes.use('/session-users', crudRouter(new SessionUserController()));

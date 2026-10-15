@@ -5,6 +5,9 @@ import { handleSeatAvailability } from './src/workers/seatAvailabilityWorker';
 import { handlePayment } from './src/workers/paymentWorker';
 
 async function start() {
+  if (!process.env.COLMEIA_PAYMENT_ID_DATABASE) {
+    console.warn('[worker] COLMEIA_PAYMENT_ID_DATABASE não configurado: callbacks de pagamento vão falhar');
+  }
   await consume(QUEUES.seatAvailability, handleSeatAvailability);
   await consume(QUEUES.payment, handlePayment);
   console.log('Workers rodando');

@@ -87,10 +87,27 @@ const resources: Resource[] = [
     input: {
       idUser: int, idMovie: int, idSession: int,
       codeTicket: { type: 'integer', example: 123456 },
-      valueTicket: num, statusPayment: status,
+      valueTicket: num,
+      idCallback: { ...str('7b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0'), description: 'idCallback do fluxo de pagamento da Colmeia' },
+      idDatabase: { ...str('Db9Njl82SkwfKbPKl46ligB1htNvn3'), description: 'Opcional. Padrão: COLMEIA_PAYMENT_ID_DATABASE do .env' },
     },
-    required: ['idUser', 'idMovie', 'idSession', 'codeTicket', 'valueTicket'],
+    required: ['idUser', 'idMovie', 'idSession', 'codeTicket', 'valueTicket', 'idCallback'],
     filters: ['idUser', 'idMovie', 'idSession', 'codeTicket', 'statusPayment'],
+    output: {
+      id: { ...int, readOnly: true },
+      idUser: int,
+      idMovie: int,
+      idSession: int,
+      codeTicket: { type: 'integer', example: 123456 },
+      valueTicket: num,
+      statusPayment: { type: 'string', enum: ['PENDING', 'PAID', 'REJECTED'], example: 'PENDING' },
+      statusReason: { type: 'string', nullable: true, example: null },
+      idCallback: str('7b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0'),
+      idDatabase: { type: 'string', nullable: true },
+      createdAt: date,
+    },
+    createDescription:
+      'Cria o ticket com statusPayment PENDING e retorna o idCallback. Após PAYMENT_DELAY_MS (60s) o worker de pagamento muda o status para PAID/REJECTED e chama o callback da Colmeia com celular, statusPagamento e motivo.',
   },
   {
     path: '/snacks-users', tag: 'SnacksUsers', schema: 'SnacksUser',
@@ -144,6 +161,44 @@ const paths: Record<string, any> = {
       summary: 'Busca usuário pelo documento da pessoa',
       parameters: [{ name: 'document', in: 'query', required: true, schema: { type: 'string' } }],
       responses: { 200: { description: 'Usuário encontrado' }, ...notFound, 400: errors[400] },
+    },
+  },
+  '/movies/{id}/sessions': {
+    get: {
+      tags: ['Movies'],
+      summary: 'Sessões de um filme (por padrão só as futuras, em ordem de horário)',
+      parameters: [
+        { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+        { name: 'date', in: 'query', required: false, description: 'Dia no horário de Brasília (YYYY-MM-DD)', schema: { type: 'string', example: '2026-10-20' } },
+        { name: 'includePast', in: 'query', required: false, description: 'true para incluir sessões que já começaram', schema: { type: 'boolean', default: false } },
+      ],
+      responses: {
+        200: {
+          description: 'Sessões do filme',
+          ...json({
+            type: 'object',
+            properties: {
+              movie: { type: 'object', properties: { id: int, title: str('Duna: Parte Dois') } },
+              total: { type: 'integer', example: 3 },
+              sessions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: int,
+                    idMovie: int,
+                    timeSession: date,
+                    availableSeats: strArr('A1', 'A2', 'A3'),
+                    availableCount: { type: 'integer', example: 120 },
+                  },
+                },
+              },
+            },
+          }),
+        },
+        ...notFound,
+        400: errors[400],
+      },
     },
   },
   '/users/{id}/purchases': {

@@ -1,26 +1,17 @@
 import 'dotenv/config';
 
-type SeatCallback = {
+type Callback = {
   idCallback: string;
-  idDatabase?: string | null;
-  phone: string;
-  approved: boolean;
-  reason: string;
+  idDatabase: string;
+  answer: Record<string, string>;
 };
 
 const MAX_ATTEMPTS = 3;
 
-// Retoma o fluxo do bot na Colmeia informando se os assentos foram liberados para pagamento
-export async function sendSeatCallback({ idCallback, idDatabase, phone, approved, reason }: SeatCallback) {
-  const body = {
-    idCallback,
-    idDatabase: idDatabase || process.env.COLMEIA_ID_DATABASE,
-    answer: {
-      celular: phone.replace(/\D/g, ''),
-      liberadoParaPagamento: String(approved),
-      motivo: reason,
-    },
-  };
+// Retoma um fluxo do bot na Colmeia (POST callback-resume-bot-flow), com até 3 tentativas
+export async function sendCallback({ idCallback, idDatabase, answer }: Callback) {
+  if (!idDatabase) throw new Error('idDatabase não configurado para o callback');
+  const body = { idCallback, idDatabase, answer };
 
   for (let attempt = 1; ; attempt++) {
     try {
@@ -41,4 +32,24 @@ export async function sendSeatCallback({ idCallback, idDatabase, phone, approved
       await new Promise((r) => setTimeout(r, 2000 * attempt));
     }
   }
+}
+
+const onlyDigits = (phone: string) => phone.replace(/\D/g, '');
+
+// Resultado da checagem de assentos
+export function sendSeatCallback(p: { idCallback: string; idDatabase?: string | null; phone: string; approved: boolean; reason: string }) {
+  return sendCallback({
+    idCallback: p.idCallback,
+    idDatabase: p.idDatabase || process.env.COLMEIA_ID_DATABASE!,
+    answer: { celular: onlyDigits(p.phone), liberadoParaPagamento: String(p.approved), motivo: p.reason },
+  });
+}
+
+// Resultado do pagamento do ticket
+export function sendPaymentCallback(p: { idCallback: string; idDatabase?: string | null; phone: string; status: string; reason: string }) {
+  return sendCallback({
+    idCallback: p.idCallback,
+    idDatabase: p.idDatabase || process.env.COLMEIA_PAYMENT_ID_DATABASE!,
+    answer: { celular: onlyDigits(p.phone), statusPagamento: p.status, motivo: p.reason },
+  });
 }
