@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/prisma';
 import { publish, QUEUES } from '../config/rabbitmq';
-import { BaseService } from './baseService';
+import { BaseService, rejectFields } from './baseService';
 import { AppError } from '../utils/appError';
 import { normalizeSeats } from '../utils/seats';
 
@@ -48,4 +48,8 @@ class SessionUserService extends BaseService {
   }
 }
 
-export const sessionUserService = new SessionUserService(prisma.sessionUser, { include });
+export const sessionUserService = new SessionUserService(prisma.sessionUser, {
+  include,
+  // Status só muda pelo worker de disponibilidade
+  mapUpdate: rejectFields(['status', 'statusReason', 'idCallback']),
+});

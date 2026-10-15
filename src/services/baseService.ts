@@ -1,3 +1,5 @@
+import { AppError } from '../utils/appError';
+
 // Delegate genérico do Prisma (prisma.movie, prisma.user, ...)
 type Delegate = {
   findMany(args?: any): Promise<any[]>;
@@ -52,4 +54,13 @@ export const withDates = (data: any, fields: string[]) => {
   const out = { ...data };
   for (const f of fields) if (out[f]) out[f] = new Date(out[f]);
   return out;
+};
+
+// Campos controlados pelo sistema (workers/backend): rejeita a atualização se vierem no body
+export const rejectFields = (fields: string[]) => (data: any) => {
+  const blocked = fields.filter((f) => f in data);
+  if (blocked.length) {
+    throw new AppError(`Campos não podem ser alterados (definidos pelo sistema): ${blocked.join(', ')}`);
+  }
+  return data;
 };

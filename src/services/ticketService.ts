@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/prisma';
 import { publish, QUEUES } from '../config/rabbitmq';
-import { BaseService } from './baseService';
+import { BaseService, rejectFields } from './baseService';
 import { AppError } from '../utils/appError';
 
 const include = { movie: true, session: { select: { id: true, idMovie: true, timeSession: true } } };
@@ -42,4 +42,8 @@ class TicketService extends BaseService {
   }
 }
 
-export const ticketService = new TicketService(prisma.ticketMoviesUser, { include });
+export const ticketService = new TicketService(prisma.ticketMoviesUser, {
+  include,
+  // Status de pagamento só muda pelo worker de pagamento
+  mapUpdate: rejectFields(['statusPayment', 'statusReason', 'idCallback']),
+});
