@@ -17,6 +17,7 @@ COPY . .
 
 # Gera o Prisma Client em ./generated/prisma (não precisa de banco)
 RUN node_modules/.bin/prisma generate --config prisma7.config.ts \
+  && sed -i 's/\r$//' docker/entrypoint.sh \
   && chmod +x docker/entrypoint.sh \
   && chown -R node:node /app
 
